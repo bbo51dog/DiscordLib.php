@@ -1,0 +1,16 @@
+{
+    "name": "bbo51dog/discordlib_php",
+    "description": "PHP library for Discord API",
+    "license": "LGPL-2.1-only",
+    "type": "library",
+    "require": {
+        "php": "^7.3",
+        "ext-json": "*",
+        "ext-sockets": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "": "src"
+        }
+    }
+}
