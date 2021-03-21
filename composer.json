@@ -5,8 +5,7 @@
     "type": "library",
     "require": {
         "php": "^7.3",
-        "ext-json": "*",
-        "ext-sockets": "*"
+        "ext-json": "*"
     },
     "autoload": {
         "psr-4": {
