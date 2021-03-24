@@ -16,6 +16,12 @@ class WebSocketClient {
     /** @var resource */
     private $resource;
 
+    /** @var WebSocketReadHandler[] */
+    private $readHandlers = [];
+
+    /** @var bool */
+    private $isRunning = false;
+
     /**
      * WebSocketClient constructor.
      *
@@ -29,34 +35,18 @@ class WebSocketClient {
         $this->path = $path;
     }
 
-    /**
-     * @throws WebSocketException
-     */
-    public function open() {
-        $key = base64_encode(random_bytes(16));
-        $host = $this->port === 443 ? "ssl://" . $this->host : $this->host;
-        $resource = fsockopen($host, $this->port, $error_code, $error_message);
-        if (!$resource) {
-            throw new WebSocketException("WebSocket connection failed ({$error_code} {$error_message})");
+    public function run() {
+        $this->open();
+        $this->isRunning = true;
+        while ($this->isRunning) {
+            try {
+                $received = $this->read();
+                foreach ($this->readHandlers as $handler) {
+                    $handler->onRead($received);
+                }
+            } catch (WebSocketException $exception) {}
+            usleep(100);
         }
-        $header =
-            "GET {$this->path} HTTP/1.1\n" .
-            "Host: {$this->host}\n" .
-            "Upgrade: websocket\n" .
-            "Connection: Upgrade\n" .
-            "Sec-WebSocket-Version: 13\n" .
-            "Sec-WebSocket-Key: {$key}\n\n";
-        if (!fwrite($resource, $header)) {
-            throw new WebSocketException("Sending header failed");
-        }
-        stream_set_timeout($resource, 5);
-        $server_response = fread($resource, 1024);
-        $secWebsocketAccept = base64_encode(sha1($key . "258EAFA5-E914-47DA-95CA-C5AB0DC85B11", true));
-        if (stripos($server_response, "101") === false ||
-            stripos($server_response, "Sec-WebSocket-Accept: {$secWebsocketAccept}") === false) {
-            throw new WebSocketException("WebSocket response failed");
-        }
-        $this->resource = $resource;
     }
 
     public function send(string $data) {
@@ -79,11 +69,26 @@ class WebSocketClient {
         fwrite($this->resource, $bin);
     }
 
+    public function close() {
+        fclose($this->resource);
+        $this->isRunning = false;
+    }
+
+    /**
+     * @param WebSocketReadHandler $handler
+     * @param bool $allowDuplicate
+     */
+    public function registerReadHandler(WebSocketReadHandler $handler, bool $allowDuplicate = false) {
+        if (!in_array($handler, $this->readHandlers) || $allowDuplicate) {
+            $this->readHandlers[] = $handler;
+        }
+    }
+
     /**
      * @return string
      * @throws WebSocketException
      */
-    public function read(): string {
+    private function read(): string {
         $data = "";
         $final = 0;
         while ($final === 0) {
@@ -142,7 +147,33 @@ class WebSocketClient {
         return $data;
     }
 
-    public function close() {
-        fclose($this->resource);
+    /**
+     * @throws WebSocketException
+     */
+    private function open() {
+        $key = base64_encode(random_bytes(16));
+        $host = $this->port === 443 ? "ssl://" . $this->host : $this->host;
+        $resource = fsockopen($host, $this->port, $error_code, $error_message);
+        if (!$resource) {
+            throw new WebSocketException("WebSocket connection failed ({$error_code} {$error_message})");
+        }
+        $header =
+            "GET {$this->path} HTTP/1.1\n" .
+            "Host: {$this->host}\n" .
+            "Upgrade: websocket\n" .
+            "Connection: Upgrade\n" .
+            "Sec-WebSocket-Version: 13\n" .
+            "Sec-WebSocket-Key: {$key}\n\n";
+        if (!fwrite($resource, $header)) {
+            throw new WebSocketException("Sending header failed");
+        }
+        stream_set_timeout($resource, 5);
+        $server_response = fread($resource, 1024);
+        $secWebsocketAccept = base64_encode(sha1($key . "258EAFA5-E914-47DA-95CA-C5AB0DC85B11", true));
+        if (stripos($server_response, "101") === false ||
+            stripos($server_response, "Sec-WebSocket-Accept: {$secWebsocketAccept}") === false) {
+            throw new WebSocketException("WebSocket response failed");
+        }
+        $this->resource = $resource;
     }
 }
