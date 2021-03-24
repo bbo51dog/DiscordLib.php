@@ -2,7 +2,7 @@
 
 namespace bbo51dog\discordlib\websocket;
 
-class WebSocket {
+class WebSocketClient {
 
     /** @var string */
     private $host;
@@ -17,7 +17,7 @@ class WebSocket {
     private $resource;
 
     /**
-     * WebSocket constructor.
+     * WebSocketClient constructor.
      *
      * @param string $host
      * @param int $port
