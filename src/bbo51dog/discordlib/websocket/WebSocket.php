@@ -63,14 +63,14 @@ class WebSocket {
         $bin = chr(0x8); //1000
         $bin .= chr(0x1); //opcode text
         $bin .= chr(1); //mask
-        if(strlen($data) < 126) {
+        if (strlen($data) < 126) {
             $bin .= chr(strlen($data));
         } elseif (strlen($data) < 0xFFFF) {
             $bin .= chr(126) . pack("n", strlen($data));
         } else {
             $bin .= chr(127) . pack("N", 0) . pack("N", strlen($data));
         }
-        $maskKey = pack("N", rand(1,0x7FFFFFFF));
+        $maskKey = pack("N", rand(1, 0x7FFFFFFF));
         $masked = "";
         for ($i = 0; $i < strlen($data); $i++) {
             $masked[$i] = chr(ord($data[$i]) ^ ord($maskKey[$i % 4]));
