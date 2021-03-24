@@ -78,4 +78,71 @@ class WebSocket {
         $bin .= $maskKey . $masked;
         fwrite($this->resource, $bin);
     }
+
+    /**
+     * @return string
+     * @throws WebSocketException
+     */
+    public function read(): string {
+        $data = "";
+        $final = 0;
+        while ($final === 0) {
+            $header = fread($this->resource, 2);
+            if (!$header) {
+                throw new WebSocketException("Reading failed");
+            }
+            $opcode = ord($header[0]) & 0x0F;
+            $final = ord($header[0]) & 0x80;
+            $masked = ord($header[1]) & 0x80;
+            $payload_len = ord($header[1]) & 0x7F;
+            if ($payload_len >= 0x7E) {
+                $ext_len = 2;
+                if ($payload_len == 0x7F) $ext_len = 8;
+                $header = fread($this->resource, $ext_len);
+                if (!$header) {
+                    throw new WebSocketException("Reading failed");
+                }
+                $payload_len = 0;
+                for ($i = 0; $i < $ext_len; $i++)
+                    $payload_len += ord($header[$i]) << ($ext_len - $i - 1) * 8;
+            }
+            if ($masked) {
+                $mask = fread($this->resource, 4);
+                if (!$mask) {
+                    throw new WebSocketException("Reading failed");
+                }
+            }
+            $frame_data = "";
+            while ($payload_len > 0) {
+                $frame = fread($this->resource, $payload_len);
+                if (!$frame) {
+                    throw new WebSocketException("Reading failed");
+                }
+                $payload_len -= strlen($frame);
+                $frame_data .= $frame;
+            }
+            if ($opcode === 9) {
+                fwrite($this->resource, chr(0x8A) . chr(0x80) . pack("N", rand(1, 0x7FFFFFFF)));
+                continue;
+            } elseif ($opcode === 8) {
+                $this->close();
+            } elseif ($opcode < 3) {
+                $data_len = strlen($frame_data);
+                if ($masked) {
+                    for ($i = 0; $i < $data_len; $i++) {
+                        $data .= $frame_data[$i] ^ $mask[$i % 4];
+                    }
+                } else {
+                    $data .= $frame_data;
+                }
+            } else {
+                continue;
+            }
+        }
+        return $data;
+    }
+
+    public function close() {
+        fclose($this->resource);
+    }
 }
