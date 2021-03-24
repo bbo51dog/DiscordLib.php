@@ -9,6 +9,7 @@ abstract class Payload {
 
     public static function init() {
         self::register(new DispatchPayload());
+        self::register(new HelloPayload());
     }
 
     public static function createFromJson(string $json): self {
@@ -16,13 +17,17 @@ abstract class Payload {
         $data = json_decode($json, true);
         /** @var int $op */
         $op = $data["op"];
-        $payload = clone self::$list[$op];
+        $payload = self::get($op);
         if ($payload instanceof DispatchPayload) {
             $payload->setSequenceNum($data["s"]);
             $payload->setEventName($data["t"]);
         }
         $payload->parseEventData($data["d"]);
         return $payload;
+    }
+
+    public static function get(int $opcode): self {
+        return clone self::$list[$opcode];
     }
 
     private static function register(Payload $payload) {

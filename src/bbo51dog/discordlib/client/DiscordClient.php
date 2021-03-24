@@ -2,6 +2,7 @@
 
 namespace bbo51dog\discordlib\client;
 
+use bbo51dog\discordlib\payload\HelloPayload;
 use bbo51dog\discordlib\payload\Payload;
 use bbo51dog\discordlib\websocket\WebSocketClient;
 use bbo51dog\discordlib\websocket\WebSocketReadHandler;
@@ -19,6 +20,9 @@ abstract class DiscordClient implements WebSocketReadHandler {
 
     /** @var string */
     private $token;
+
+    /** @var int */
+    private $heartbeatInterval;
 
     /**
      * DiscordClient constructor.
@@ -43,5 +47,12 @@ abstract class DiscordClient implements WebSocketReadHandler {
 
     public function onRead(string $data) {
         $payload = Payload::createFromJson($data);
+        if ($payload instanceof HelloPayload) {
+            $this->onHello($payload);
+        }
+    }
+
+    private function onHello(HelloPayload $payload) {
+        $this->heartbeatInterval = $payload->getHeartbeatInterval();
     }
 }
