@@ -5,7 +5,7 @@ namespace bbo51dog\discordlib\payload;
 interface Receiveable {
 
     /**
-     * @param array|null $data
+     * @param mixed $data
      */
-    public function parseEventData(?array $data): void;
+    public function parseEventData($data): void;
 }

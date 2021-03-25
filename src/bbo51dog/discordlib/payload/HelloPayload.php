@@ -10,7 +10,7 @@ class HelloPayload extends Payload implements Receiveable {
     /**
      * @inheritDoc
      */
-    public function parseEventData(?array $data): void {
+    public function parseEventData($data): void {
         $this->heartbeatInterval = $data["heartbeat_interval"];
     }
 

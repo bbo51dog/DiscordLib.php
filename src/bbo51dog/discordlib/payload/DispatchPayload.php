@@ -13,7 +13,7 @@ class DispatchPayload extends Payload implements Receiveable {
     /**
      * @inheritDoc
      */
-    public function parseEventData(?array $data): void {
+    public function parseEventData($data): void {
 
     }
 
