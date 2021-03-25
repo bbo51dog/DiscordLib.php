@@ -2,7 +2,7 @@
 
 namespace bbo51dog\discordlib\payload;
 
-class DispatchPayload extends Payload {
+class DispatchPayload extends Payload implements Receiveable {
 
     /** @var int */
     private $sequenceNum;

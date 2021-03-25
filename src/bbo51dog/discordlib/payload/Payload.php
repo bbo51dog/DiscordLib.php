@@ -12,12 +12,19 @@ abstract class Payload {
         self::register(new HelloPayload());
     }
 
-    final public static function createFromJson(string $json): self {
+    /**
+     * @param string $json
+     * @return Payload|null
+     */
+    final public static function createFromJson(string $json): ?Payload {
         /** @var array $data */
         $data = json_decode($json, true);
         /** @var int $op */
         $op = $data["op"];
         $payload = self::get($op);
+        if (!($payload instanceof Receiveable)) {
+            return null;
+        }
         if ($payload instanceof DispatchPayload) {
             $payload->setSequenceNum($data["s"]);
             $payload->setEventName($data["t"]);
@@ -33,11 +40,6 @@ abstract class Payload {
     private static function register(Payload $payload) {
         self::$list[$payload->getOp()] = clone $payload;
     }
-
-    /**
-     * @param array|null $data
-     */
-    abstract public function parseEventData(?array $data): void;
 
     /**
      * @return int

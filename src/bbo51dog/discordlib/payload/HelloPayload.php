@@ -2,7 +2,7 @@
 
 namespace bbo51dog\discordlib\payload;
 
-class HelloPayload extends Payload {
+class HelloPayload extends Payload implements Receiveable {
 
     /** @var int */
     private $heartbeatInterval;
