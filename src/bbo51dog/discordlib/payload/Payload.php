@@ -7,12 +7,12 @@ abstract class Payload {
     /** @var Payload[] */
     private static $list;
 
-    public static function init() {
+    final public static function init() {
         self::register(new DispatchPayload());
         self::register(new HelloPayload());
     }
 
-    public static function createFromJson(string $json): self {
+    final public static function createFromJson(string $json): self {
         /** @var array $data */
         $data = json_decode($json, true);
         /** @var int $op */
@@ -26,7 +26,7 @@ abstract class Payload {
         return $payload;
     }
 
-    public static function get(int $opcode): self {
+    final public static function get(int $opcode): self {
         return clone self::$list[$opcode];
     }
 

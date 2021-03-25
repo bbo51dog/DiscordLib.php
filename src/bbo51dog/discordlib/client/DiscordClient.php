@@ -45,7 +45,7 @@ abstract class DiscordClient implements WebSocketReadHandler {
         $this->wsClient->run();
     }
 
-    public function onRead(string $data) {
+    final public function onRead(string $data) {
         $payload = Payload::createFromJson($data);
         if ($payload instanceof HelloPayload) {
             $this->onHello($payload);
