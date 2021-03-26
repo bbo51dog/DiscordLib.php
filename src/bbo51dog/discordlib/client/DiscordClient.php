@@ -4,6 +4,7 @@ namespace bbo51dog\discordlib\client;
 
 use bbo51dog\discordlib\payload\HeartbeatPayload;
 use bbo51dog\discordlib\payload\HelloPayload;
+use bbo51dog\discordlib\payload\IdentifyPayload;
 use bbo51dog\discordlib\payload\OpCode;
 use bbo51dog\discordlib\payload\Payload;
 use bbo51dog\discordlib\websocket\WebSocketClient;
@@ -71,7 +72,9 @@ abstract class DiscordClient {
     final public function onTick() {
         try {
             $received = $this->wsClient->read();
-            $this->onRead($received);
+            if (!empty($received)) {
+                $this->onRead($received);
+            }
         } catch (WebSocketException $exception) {
         }
         $this->lastTick = microtime(true);
@@ -89,6 +92,7 @@ abstract class DiscordClient {
     private function onHello(HelloPayload $payload) {
         $this->heartbeatInterval = $payload->getHeartbeatInterval();
         $this->heartbeat();
+        $this->identify();
     }
 
     private function onHeartbeat() {
@@ -99,6 +103,14 @@ abstract class DiscordClient {
         /** @var HeartbeatPayload $payload */
         $payload = Payload::get(OpCode::OP_HEARTBEAT);
         $payload->setSequenceNum($this->lastSequenceNum);
+        $this->wsClient->send($payload->encode());
+        $this->lastHeartbeat = microtime(true);
+    }
+
+    private function identify() {
+        /** @var IdentifyPayload $payload */
+        $payload = Payload::get(OpCode::OP_IDENTIFY);
+        $payload->setToken($this->token);
         $this->wsClient->send($payload->encode());
     }
 }

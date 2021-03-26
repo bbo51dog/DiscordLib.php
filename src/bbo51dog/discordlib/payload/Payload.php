@@ -10,6 +10,7 @@ abstract class Payload {
     final public static function init() {
         self::register(new DispatchPayload());
         self::register(new HeartbeatPayload());
+        self::register(new IdentifyPayload());
         self::register(new HelloPayload());
     }
 
