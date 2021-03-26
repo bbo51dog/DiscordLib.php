@@ -5,15 +5,17 @@ namespace bbo51dog\discordlib\client;
 use bbo51dog\discordlib\payload\HelloPayload;
 use bbo51dog\discordlib\payload\Payload;
 use bbo51dog\discordlib\websocket\WebSocketClient;
-use bbo51dog\discordlib\websocket\WebSocketReadHandler;
+use bbo51dog\discordlib\websocket\WebSocketException;
 
-abstract class DiscordClient implements WebSocketReadHandler {
+abstract class DiscordClient {
 
     public const GATEWAY_HOST = "gateway.discord.gg";
 
     public const GATEWAY_VERSION = 8;
 
     public const GATEWAY_PACKET_ENCODE = "json";
+
+    public const TICK_INTERVAL = 0.1;
 
     /** @var WebSocketClient */
     private $wsClient;
@@ -24,6 +26,9 @@ abstract class DiscordClient implements WebSocketReadHandler {
     /** @var int */
     private $heartbeatInterval;
 
+    /** @var float */
+    private $lastTick;
+
     /**
      * DiscordClient constructor.
      *
@@ -31,7 +36,6 @@ abstract class DiscordClient implements WebSocketReadHandler {
      */
     public function __construct(string $token) {
         $this->token = $token;
-
         Payload::init();
     }
 
@@ -41,8 +45,24 @@ abstract class DiscordClient implements WebSocketReadHandler {
             443,
             "/?v=" . self::GATEWAY_VERSION . "&encoding=" . self::GATEWAY_PACKET_ENCODE
         );
-        $this->wsClient->registerReadHandler($this);
-        $this->wsClient->run();
+        $this->wsClient->open();
+        $this->lastTick = microtime(true);
+        while ($this->wsClient->isConnecting()) {
+            $current = microtime(true);
+            if ($current - $this->lastTick >= self::TICK_INTERVAL) {
+                $this->onTick();
+            }
+            usleep(10);
+        }
+    }
+
+    final public function onTick() {
+        try {
+            $received = $this->wsClient->read();
+            $this->onRead($received);
+        } catch (WebSocketException $exception) {
+        }
+        $this->lastTick = microtime(true);
     }
 
     final public function onRead(string $data) {

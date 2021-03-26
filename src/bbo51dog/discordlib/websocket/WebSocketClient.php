@@ -16,11 +16,8 @@ class WebSocketClient {
     /** @var resource */
     private $resource;
 
-    /** @var WebSocketReadHandler[] */
-    private $readHandlers = [];
-
     /** @var bool */
-    private $isRunning = false;
+    private $isConnecting = false;
 
     /**
      * WebSocketClient constructor.
@@ -33,20 +30,6 @@ class WebSocketClient {
         $this->host = $host;
         $this->port = $port;
         $this->path = $path;
-    }
-
-    public function run() {
-        $this->open();
-        $this->isRunning = true;
-        while ($this->isRunning) {
-            try {
-                $received = $this->read();
-                foreach ($this->readHandlers as $handler) {
-                    $handler->onRead($received);
-                }
-            } catch (WebSocketException $exception) {}
-            usleep(100);
-        }
     }
 
     public function send(string $data) {
@@ -71,24 +54,14 @@ class WebSocketClient {
 
     public function close() {
         fclose($this->resource);
-        $this->isRunning = false;
-    }
-
-    /**
-     * @param WebSocketReadHandler $handler
-     * @param bool $allowDuplicate
-     */
-    public function registerReadHandler(WebSocketReadHandler $handler, bool $allowDuplicate = false) {
-        if (!in_array($handler, $this->readHandlers) || $allowDuplicate) {
-            $this->readHandlers[] = $handler;
-        }
+        $this->isConnecting = false;
     }
 
     /**
      * @return string
      * @throws WebSocketException
      */
-    private function read(): string {
+    public function read(): string {
         $data = "";
         $final = 0;
         while ($final === 0) {
@@ -150,7 +123,7 @@ class WebSocketClient {
     /**
      * @throws WebSocketException
      */
-    private function open() {
+    public function open() {
         $key = base64_encode(random_bytes(16));
         $host = $this->port === 443 ? "ssl://" . $this->host : $this->host;
         $resource = fsockopen($host, $this->port, $error_code, $error_message);
@@ -175,5 +148,10 @@ class WebSocketClient {
             throw new WebSocketException("WebSocket response failed");
         }
         $this->resource = $resource;
+        $this->isConnecting = true;
+    }
+
+    public function isConnecting(): bool {
+        return $this->isConnecting;
     }
 }
